@@ -9,7 +9,7 @@ import llama_cpp
 model = llama_cpp.Llama(
       model_path="./models/Phi-3.5-mini-instruct.Q8_0.gguf",
       n_gpu_layers=-1,
-      verbose=False,
+      verbose=True,
       logits_all=True,
 )
 

@@ -9,7 +9,7 @@ import llama_cpp
 model = llama_cpp.Llama(
       model_path="./models/Phi-3.5-mini-instruct.Q8_0.gguf",
       n_gpu_layers=-1,
-      verbose=True,
+      verbose=False,
       logits_all=True,
 )
 
@@ -33,24 +33,7 @@ def get_next_k_tokens(sentence, k=5):
 
     return next_tokens
 
-# def get_next_k_tokens(sentence, k=5):
-    
-#     """ Given a sentence get the next top k tokens """
 
-#     if isinstance(sentence, str):
-#         sentence = sentence.encode("utf-8")
-    
-#     model.reset()
-#     model.eval(model.tokenize(sentence))
-#     next_logits = torch.tensor(model.eval_logits)[-1,:]
-#     next_probs = F.softmax(next_logits, dim=0)
-#     top_probs, top_indices = torch.topk(next_probs, k)
-    
-#     next_tokens = [
-#         model.detokenize([idx]).decode("utf-8") for idx in top_indices
-#         ]
-
-#     return next_tokens
 
 def phrase_tree_search(seed, k, max_depth=3):
 
@@ -80,7 +63,7 @@ def phrase_graph(seed, k, max_depth=3):
         that represents the paths """
     
     G = nx.DiGraph()
-    G.add_node((seed, 0), phrase=seed, token='<SEED>', depth=0)
+    G.add_node((seed, 0), phrase=seed, token=seed, depth=0)
 
     queue = deque([(seed, seed, 0)])
 
@@ -97,7 +80,14 @@ def phrase_graph(seed, k, max_depth=3):
         for phrase, token in zip(next_phrases, next_tokens):
             new_depth = depth + 1
             node_id = (token, new_depth)
-            G.add_node(node_id, phrase=phrase, token=token, depth=new_depth)
+            if node_id in G: 
+                if isinstance(G.nodes[node_id]["phrase"], list):  
+                    G.nodes[node_id]["phrase"].append(phrase)
+                else:
+                    G.nodes[node_id]["phrase"] = [G.nodes[node_id]['phrase'], phrase]
+            else:
+                G.add_node(node_id, phrase=phrase, token=token, depth=new_depth)
+            
             G.add_edge((current_t, depth), node_id)
             queue.append((phrase, token, new_depth))
     

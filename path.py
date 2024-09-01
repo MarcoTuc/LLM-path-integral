@@ -6,6 +6,8 @@ import torch
 import torch.nn.functional as F
 import llama_cpp
 
+from tqdm import tqdm
+
 model = llama_cpp.Llama(
       model_path="./models/Phi-3.5-mini-instruct.Q8_0.gguf",
       n_gpu_layers=-1,
@@ -67,6 +69,8 @@ def phrase_graph(seed, k, max_depth=3):
 
     queue = deque([(seed, seed, 0)])
 
+    pbar = tqdm(total=(k**(max_depth+1)-1)/(k-1), desc="Building graph")
+
     while queue:
         
         current_p, current_t, depth = queue.popleft()
@@ -78,6 +82,7 @@ def phrase_graph(seed, k, max_depth=3):
         next_phrases = [current_p + n for n in next_tokens]
         
         for phrase, token in zip(next_phrases, next_tokens):
+            pbar.update(1)
             new_depth = depth + 1
             node_id = (token, new_depth)
             if node_id not in G: 
@@ -85,7 +90,9 @@ def phrase_graph(seed, k, max_depth=3):
             G.add_edge((current_t, depth), node_id)
             queue.append((phrase, token, new_depth))
     
-    for node in G.nodes():
+    pbar.close()
+    
+    for node in tqdm(G.nodes(), desc="Assigning phrases"):
         if node == (seed, 0):
             G.nodes[node]['phrase'] = [seed]
         else:

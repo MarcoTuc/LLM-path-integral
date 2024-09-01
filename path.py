@@ -80,17 +80,22 @@ def phrase_graph(seed, k, max_depth=3):
         for phrase, token in zip(next_phrases, next_tokens):
             new_depth = depth + 1
             node_id = (token, new_depth)
-            if node_id in G: 
-                if isinstance(G.nodes[node_id]["phrase"], list):  
-                    G.nodes[node_id]["phrase"].append(phrase)
-                else:
-                    G.nodes[node_id]["phrase"] = [G.nodes[node_id]['phrase'], phrase]
-            else:
+            if node_id not in G: 
                 G.add_node(node_id, phrase=phrase, token=token, depth=new_depth)
-            
             G.add_edge((current_t, depth), node_id)
             queue.append((phrase, token, new_depth))
     
+    for node in G.nodes():
+        if node == (seed, 0):
+            G.nodes[node]['phrase'] = [seed]
+        else:
+            paths = list(nx.all_simple_paths(G, (seed, 0), node))
+            phrases = []
+            for path in paths:
+                phrase = "".join([G.nodes[n]['token'] for n in path])
+                phrases.append(phrase)
+            G.nodes[node]['phrase'] = phrases
+
     return G
 
 
